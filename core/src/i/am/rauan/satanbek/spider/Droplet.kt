@@ -7,10 +7,13 @@ import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.Animation
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.TimeUtils
 import i.am.rauan.satanbek.spider.constants.Global
 import i.am.rauan.satanbek.spider.utils.Fun
@@ -32,6 +35,15 @@ class Droplet: ApplicationAdapter() {
 
     private var rainDrops: MutableList<Rectangle> = mutableListOf()
     private var lastDropTime: Long = 0
+
+    // Fly.
+    private val flyFrameRow = 1
+    private val flyFrameColumn = 4
+    private lateinit var flyAnimation: Animation<TextureRegion>
+    private lateinit var fly: Texture
+    private var stateTime: Float = 0f
+    private lateinit var flyRectangle: Rectangle
+    private val flySize = 64f
 
     override fun create() {
         Gdx.app.log(tag, "create(): ${Global.SCREEN_WIDTH}x${Global.SCREEN_HEIGHT}")
@@ -61,6 +73,27 @@ class Droplet: ApplicationAdapter() {
 
         // Spawn raindrops.
         spawnRainDrop()
+
+        // Fly.
+        fly = Texture(Gdx.files.internal("fly_sprite.png"))
+        var tmp = TextureRegion.split(fly, fly.width / flyFrameColumn, fly.height / flyFrameRow)
+
+        Gdx.app.log(tag, "tmp: ${tmp[0]}, ${tmp.size}")
+
+        val flyFrames = Array<TextureRegion>(flyFrameColumn * flyFrameRow)
+        for (i in 0 until flyFrameRow) {
+            for (j in 0 until flyFrameColumn) {
+                flyFrames.add(tmp[i][j])
+            }
+        }
+
+        flyAnimation = Animation<TextureRegion>(0.1f, flyFrames)
+        stateTime = 0f
+        flyRectangle = Rectangle()
+        flyRectangle.x = Global.SCREEN_WIDTH - flySize * 3
+        flyRectangle.y = Global.SCREEN_HEIGHT / 2 - flySize / 2
+        flyRectangle.width = flySize
+        flyRectangle.height = flySize
     }
 
     override fun render() {
@@ -74,6 +107,13 @@ class Droplet: ApplicationAdapter() {
         for (it in rainDrops) {
             batch.draw(dropImage, it.x, it.y)
         }
+
+        stateTime += Gdx.graphics.deltaTime
+
+        Gdx.app.log(tag, "stateTime=$stateTime")
+
+        var fly = flyAnimation.getKeyFrame(stateTime, true)
+        batch.draw(fly, flyRectangle.x, flyRectangle.y)
 
         batch.end()
 
